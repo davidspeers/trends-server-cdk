@@ -1,8 +1,8 @@
 const googleTrendsAPI = require('google-trends-api');
 const moment = require('moment');
 
-exports.handler = async (request, response) => {
-    const postData = JSON.parse(request.body);
+exports.handler = async (event) => {
+    const postData = JSON.parse(event.body);
 
     //Get Trends results
     const dates = [
@@ -20,7 +20,10 @@ exports.handler = async (request, response) => {
 
     postData.values.push(await getCpuAnswer(postData, dates));
 
-    response.send(await getTrendsScores(postData, dates));
+    return {
+        statusCode: 200,
+        body: await getTrendsScores(postData, dates)
+    };
 };
 
 async function getCpuAnswer(postData, dates) {

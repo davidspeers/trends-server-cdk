@@ -1,15 +1,16 @@
 import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
+import * as nodejs from '@aws-cdk/aws-lambda-nodejs';
 
 export class TrendsServerCdkStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const handler = new lambda.Function(this, 'GoogleTrendsHandler', {
+    const handler = new nodejs.NodejsFunction(this, 'GoogleTrendsHandler', {
       runtime: lambda.Runtime.NODEJS_12_X,
-      code: lambda.Code.fromAsset('lambdas'),
-      handler: 'googleTrends.handler',
+      entry: 'lambdas/googleTrends.js',
+      handler: 'handler',
     });
 
     const api = new apigateway.RestApi(this, 'google-trends-api', {
