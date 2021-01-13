@@ -1,62 +1,66 @@
-const googleTrendsAPI = require('google-trends-api');
-const moment = require('moment');
+const googleTrendsAPI = require("google-trends-api");
+const moment = require("moment");
 
 exports.handler = async (event) => {
-    const postData = JSON.parse(event.body);
+  const { query, values } = JSON.parse(event.body);
 
-    //Get Trends results
-    const dates = [
-        moment()
-            .subtract(32, 'day')
-            .toDate(),
-        moment()
-            .subtract(2, 'day')
-            .toDate(),
-    ];
+  const dates = [
+    moment().subtract(366, "day").toDate(),
+    moment().subtract(2, "day").toDate(),
+  ];
 
-    Object.keys(postData.values).forEach(key => {
-        postData.values[key] = `${postData.query} ${postData.values[key]}`;
-    });
+  const cpuAnswer = await getCpuAnswer(query, dates);
+  values.push(cpuAnswer);
 
-    postData.values.push(await getCpuAnswer(postData, dates));
-
-    return {
-        statusCode: 200,
-        body: await getTrendsScores(postData, dates)
-    };
+  const queries = values.map((value) => query + " " + value);
+  return getTrendsScores(queries, dates);
 };
 
-async function getCpuAnswer(postData, dates) {
-    const relatedQueries = JSON.parse(
-        await googleTrendsAPI.relatedQueries({
-            keyword: postData.query,
-            geo: 'US',
-            startTime: dates[0],
-            endTime: dates[1],
-        })
-    );
-    const topQueries = relatedQueries.default.rankedList[0];
-    // Return the fifth highest answer
-    return topQueries.rankedKeyword[4].query;
+async function getCpuAnswer(query, dates) {
+  const relatedQueries = JSON.parse(
+    await googleTrendsAPI.relatedQueries({
+      keyword: query,
+      geo: "US",
+      startTime: dates[0],
+      endTime: dates[1],
+    })
+  );
+  const topQueries = relatedQueries.default.rankedList[0];
+  // Return the fifth highest answer
+  return topQueries.rankedKeyword[4].query;
 }
 
-async function getTrendsScores(postData, dates) {
-    const interestOverTime = JSON.parse(
-        await googleTrendsAPI.interestOverTime({
-            keyword: postData.values,
-            startTime: dates[0],
-            endTime: dates[1],
-        })
-    );
-    let averageScores = interestOverTime.default.averages;
+async function getTrendsScores(queries, dates) {
+  const {
+    default: { timelineData, averages },
+  } = JSON.parse(
+    await googleTrendsAPI.interestOverTime({
+      keyword: queries,
+      startTime: dates[0],
+      endTime: dates[1],
+    })
+  );
 
-    //If no results return 0s else return results
-    if (averageScores.length === 0) {
-        postData.values.forEach(() => averageScores.push(0));
-    }
+  if (averages.length === 0) {
+    return {
+      statusCode: 404,
+      body: "No results for these queries",
+    };
+  }
 
-    let trendsScores = {};
-    postData.values.forEach((value, index) => (trendsScores[value] = averageScores[index]));
+  let trendsScores = {
+    user: {
+      answer: queries[0],
+      weeklyScore: timelineData.map((entry) => entry.value[0]),
+    },
+    cpu: {
+      answer: queries[1],
+      weeklyScore: timelineData.map((entry) => entry.value[1]),
+    },
+  };
 
-    return JSON.stringify(trendsScores);
+  return {
+    statusCode: 200,
+    body: JSON.stringify(trendsScores),
+  };
 }
