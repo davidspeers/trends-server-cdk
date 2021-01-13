@@ -10,7 +10,7 @@ exports.handler = async (event) => {
   ];
 
   const cpuAnswer = await getCpuAnswer(query, dates);
-  values.push(cpuAnswer);
+  values.push(cpuAnswer.replace(new RegExp(query, "ig"), ""));
 
   const queries = values.map((value) => query + " " + value);
   return getTrendsScores(queries, dates);
