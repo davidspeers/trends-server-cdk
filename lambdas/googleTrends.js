@@ -2,7 +2,7 @@ const googleTrendsAPI = require("google-trends-api");
 const moment = require("moment");
 
 exports.handler = async (event) => {
-  const { query, values } = JSON.parse(event.body);
+  const { query, userAnswer } = JSON.parse(event.body);
 
   const dates = [
     moment().subtract(366, "day").toDate(),
@@ -10,9 +10,8 @@ exports.handler = async (event) => {
   ];
 
   const cpuAnswer = await getCpuAnswer(query, dates);
-  values.push(cpuAnswer.replace(new RegExp(query, "ig"), ""));
-
-  const queries = values.map((value) => query + " " + value);
+  const answers = [userAnswer, cpuAnswer.replace(new RegExp(query, "ig"), "")];
+  const queries = answers.map((value) => query + " " + value);
   return getTrendsScores(queries, dates);
 };
 
