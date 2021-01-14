@@ -50,11 +50,11 @@ async function getTrendsScores(queries, dates) {
   let trendsScores = {
     user: {
       answer: queries[0],
-      weeklyScore: timelineData.map((entry) => entry.value[0]),
+      weeklyScores: timelineData.map((entry) => entry.value[0]),
     },
     cpu: {
       answer: queries[1],
-      weeklyScore: timelineData.map((entry) => entry.value[1]),
+      weeklyScores: timelineData.map((entry) => entry.value[1]),
     },
   };
 
